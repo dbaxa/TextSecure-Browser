@@ -135,7 +135,7 @@
 
                 $('#multi-device .status').text("Connecting...");
                 $('#setup-qr').html('');
-                axolotl.protocol.createIdentityKeyRecvSocket().then(function(cryptoInfo) {
+                textsecure.protocol_wrapper.createIdentityKeyRecvSocket().then(function(cryptoInfo) {
                     var qrCode = new QRCode(document.getElementById('setup-qr'));
 
                     var socket = textsecure.api.getTempWebsocket();

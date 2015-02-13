@@ -111,11 +111,6 @@
       "long",
       "bytebuffer",
       "protobuf"
-    ],
-    "libaxolotl": [
-      "long",
-      "bytebuffer",
-      "protobuf"
     ]
   }
 }
