@@ -27,10 +27,14 @@
             this.conversation = options.conversation;
         },
         events: {
+            'click .resolve': 'resolve',
             'click .back': 'goBack'
         },
         goBack: function() {
             this.trigger('back');
+        },
+        resolve: function() {
+            this.conversation.resolveConflicts();
         },
         render: function() {
             this.$el.html(Mustache.render(this.template, {
@@ -39,7 +43,8 @@
                 tofrom: this.model.isIncoming() ? 'From' : 'To',
                 contacts: {
                     name     : this.conversation.getTitle(),
-                    avatar   : this.conversation.get('avatar')
+                    avatar   : this.conversation.get('avatar'),
+                    conflict : this.model.getKeyConflict()
                 }
             }));
             this.view.render().$el.prependTo(this.$el.find('.message-container'));

@@ -189,6 +189,18 @@
     font-style: italic;
     opacity: 0.8;
   }
+
+  .error {
+    font-style: italic;
+  }
+
+  .key-conflict {
+    padding: 15px 10px;
+
+    button {
+      margin-top: 5px;
+    }
+  }
 }
 
 .bottom-bar {

@@ -423,6 +423,15 @@ input.new-message {
     font: small;
     font-style: italic;
     opacity: 0.8; }
+  .message-detail .error,
+  .message-list .error {
+    font-style: italic; }
+  .message-detail .key-conflict,
+  .message-list .key-conflict {
+    padding: 15px 10px; }
+    .message-detail .key-conflict button,
+    .message-list .key-conflict button {
+      margin-top: 5px; }
 
 .bottom-bar {
   position: fixed;
