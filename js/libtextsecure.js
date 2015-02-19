@@ -156,6 +156,27 @@
         return finalMessage;
     }
 
+    var handlePreKeyWhisperMessage = function(proto) {
+        if (proto.message.readUint8() != ((3 << 4) | 3))
+            throw new Error("Bad version byte");
+        var from = proto.source + "." + (proto.sourceDevice == null ? 0 : proto.sourceDevice);
+
+        try {
+            return axolotl.protocol.handlePreKeyWhisperMessage(
+                from, getString(proto.message)
+            );
+        } catch(e) {
+            if (e.message === 'Unknown identity key') {
+                // create an error that the UI will pick up and ask the
+                // user if they want to re-negotiate
+                throw new textsecure.IncomingIdentityKeyError(
+                    proto.source, getString(proto.message.encode())
+                );
+            }
+            throw e;
+        }
+    };
+
     window.textsecure = window.textsecure || {};
     window.textsecure.protocol_wrapper = {
         handleIncomingPushMessageProto: function(proto) {
@@ -166,17 +187,11 @@
                 var from = proto.source + "." + (proto.sourceDevice == null ? 0 : proto.sourceDevice);
                 return axolotl.protocol.decryptWhisperMessage(from, getString(proto.message)).then(decodeMessageContents);
             case textsecure.protobuf.IncomingPushMessageSignal.Type.PREKEY_BUNDLE:
-                if (proto.message.readUint8() != ((3 << 4) | 3))
-                    throw new Error("Bad version byte");
-                var from = proto.source + "." + (proto.sourceDevice == null ? 0 : proto.sourceDevice);
-                return axolotl.protocol.handlePreKeyWhisperMessage(from, getString(proto.message)).then(decodeMessageContents);
+                return handlePreKeyWhisperMessage(proto).then(decodeMessageContents);
             case textsecure.protobuf.IncomingPushMessageSignal.Type.RECEIPT:
                 return Promise.resolve(null);
             case textsecure.protobuf.IncomingPushMessageSignal.Type.PREKEY_BUNDLE_DEVICE_CONTROL:
-                if (proto.message.readUint8() != ((3 << 4) | 3))
-                    throw new Error("Bad version byte");
-                var from = proto.source + "." + (proto.sourceDevice == null ? 0 : proto.sourceDevice);
-                return axolotl.protocol.handlePreKeyWhisperMessage(from, getString(proto.message)).then(decodeDeviceContents);
+                return handlePreKeyWhisperMessage(proto).then(decodeDeviceContents);
             case textsecure.protobuf.IncomingPushMessageSignal.Type.DEVICE_CONTROL:
                 var from = proto.source + "." + (proto.sourceDevice == null ? 0 : proto.sourceDevice);
                 return axolotl.protocol.decryptWhisperMessage(from, getString(proto.message)).then(decodeDeviceContents);
@@ -14959,8 +14974,7 @@ window.axolotl.protocol = function() {
                 if (open_session !== undefined)
                     closeSession(open_session); // To be returned and saved later
             } else {
-                // ...otherwise create an error that the UI will pick up and ask the user if they want to re-negotiate
-                throw new textsecure.IncomingIdentityKeyError(encodedNumber, getString(message.encode()));
+                throw new Error('Unknown identity key');
             }
         }
         return initSession(false, preKeyPair, signedPreKeyPair, encodedNumber, toArrayBuffer(message.identityKey), toArrayBuffer(message.baseKey), undefined)
