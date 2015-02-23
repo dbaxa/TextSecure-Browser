@@ -40,17 +40,14 @@
     ReplayableError.prototype.constructor = ReplayableError;
 
     ReplayableError.prototype.replay = function() {
-        var args = Array.prototype.slice.call(arguments);
-        args.shift();
-        args = this.args.concat(args);
-
-        registeredFunctions[this.functionCode].apply(window, args);
+        return registeredFunctions[this.functionCode].apply(window, this.args);
     };
 
-    function IncomingIdentityKeyError(number, message) {
+    function IncomingIdentityKeyError() {
         ReplayableError.call(this, {
             functionCode : Type.INIT_SESSION,
-            args         : [number, message]
+            args         : Array.prototype.slice.call(arguments)
+
         });
         this.name = 'IncomingIdentityKeyError';
         this.message = "The identity of the sender has changed. This may be malicious, or the sender may have simply reinstalled TextSecure.";
@@ -58,10 +55,10 @@
     IncomingIdentityKeyError.prototype = new ReplayableError();
     IncomingIdentityKeyError.prototype.constructor = IncomingIdentityKeyError;
 
-    function OutgoingIdentityKeyError(number, message) {
+    function OutgoingIdentityKeyError() {
         ReplayableError.call(this, {
             functionCode : Type.SEND_MESSAGE,
-            args         : [number, message]
+            args         : Array.prototype.slice.call(arguments)
         });
         this.name = 'OutgoingIdentityKeyError';
         this.message = "The identity of the destination has changed. This may be malicious, or the destination may have simply reinstalled TextSecure.";
