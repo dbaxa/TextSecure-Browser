@@ -197,18 +197,11 @@
         }
     };
 
-    var wipeIdentityAndTryMessageAgain = function(message, message_id) {
+    var wipeIdentityAndTryMessageAgain = function(message) {
         var proto = textsecure.protobuf.IncomingPushMessageSignal.decode(message);
         // Wipe identity key!
         textsecure.storage.devices.removeIdentityKeyForNumber(proto.source);
-        return textsecure.protocol_wrapper.handleIncomingPushMessageProto(proto).then(
-            function(pushMessageContent) {
-                extension.trigger('message:decrypted', {
-                    message_id : message_id,
-                    data       : pushMessageContent
-                });
-            }
-        );
+        return textsecure.protocol_wrapper.handleIncomingPushMessageProto(proto);
     }
     textsecure.replay.registerFunction(wipeIdentityAndTryMessageAgain, textsecure.replay.Type.INIT_SESSION);
 })();
@@ -16984,20 +16977,15 @@ window.textsecure.messaging = function() {
         }
     }
 
-    var tryMessageAgain = function(number, encodedMessage, message_id) {
-        var message = new Whisper.MessageCollection().add({id: message_id});
-        message.fetch().then(function() {
-            //TODO: Encapsuate with the rest of textsecure.storage.devices
-            textsecure.storage.devices.removeIdentityKeyForNumber(number);
-            var proto = textsecure.protobuf.PushMessageContent.decode(encodedMessage, 'binary');
-            sendMessageProto(message.get('sent_at'), [number], proto, function(res) {
+    var tryMessageAgain = function(number, encodedMessage, timestamp) {
+        textsecure.storage.devices.removeIdentityKeyForNumber(number);
+        var proto = textsecure.protobuf.PushMessageContent.decode(encodedMessage, 'binary');
+        return new Promise(function(resolve, reject) {
+            sendMessageProto(timestamp, [number], proto, function(res) {
                 if (res.failure.length > 0)
-                    message.set('errors', res.failure);
+                    reject(res.failure);
                 else
-                    message.set('errors', []);
-                message.save().then(function(){
-                    extension.trigger('message', message); // notify frontend listeners
-                });
+                    resolve();
             });
         });
     };
@@ -17058,7 +17046,7 @@ window.textsecure.messaging = function() {
                             if (error.message !== "Identity key changed")
                                 registerError(number, "Failed to reload device keys", error);
                             else {
-                                error = new textsecure.OutgoingIdentityKeyError(number, getString(message.encode()));
+                                error = new textsecure.OutgoingIdentityKeyError(number, getString(message.encode()), timestamp);
                                 registerError(number, "Identity key changed", error);
                             }
                         });

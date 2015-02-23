@@ -123,18 +123,11 @@
         }
     };
 
-    var wipeIdentityAndTryMessageAgain = function(message, message_id) {
+    var wipeIdentityAndTryMessageAgain = function(message) {
         var proto = textsecure.protobuf.IncomingPushMessageSignal.decode(message);
         // Wipe identity key!
         textsecure.storage.devices.removeIdentityKeyForNumber(proto.source);
-        return textsecure.protocol_wrapper.handleIncomingPushMessageProto(proto).then(
-            function(pushMessageContent) {
-                extension.trigger('message:decrypted', {
-                    message_id : message_id,
-                    data       : pushMessageContent
-                });
-            }
-        );
+        return textsecure.protocol_wrapper.handleIncomingPushMessageProto(proto);
     }
     textsecure.replay.registerFunction(wipeIdentityAndTryMessageAgain, textsecure.replay.Type.INIT_SESSION);
 })();
