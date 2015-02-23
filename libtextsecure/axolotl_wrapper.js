@@ -80,21 +80,20 @@
     }
 
     var handlePreKeyWhisperMessage = function(proto) {
-        if (proto.message.readUint8() != ((3 << 4) | 3))
+        // Read the version byte non-destructively
+        if (proto.message.readUint8(proto.message.offset) != ((3 << 4) | 3))
             throw new Error("Bad version byte");
         var from = proto.source + "." + (proto.sourceDevice == null ? 0 : proto.sourceDevice);
 
         try {
             return axolotl.protocol.handlePreKeyWhisperMessage(
-                from, getString(proto.message)
+                from, getString(proto.message.slice(proto.message.offset + 1))
             );
         } catch(e) {
             if (e.message === 'Unknown identity key') {
                 // create an error that the UI will pick up and ask the
                 // user if they want to re-negotiate
-                throw new textsecure.IncomingIdentityKeyError(
-                    proto.source, getString(proto.message.encode())
-                );
+                throw new textsecure.IncomingIdentityKeyError(proto.toArrayBuffer());
             }
             throw e;
         }
@@ -124,11 +123,11 @@
         }
     };
 
-    var wipeIdentityAndTryMessageAgain = function(from, encodedMessage, message_id) {
+    var wipeIdentityAndTryMessageAgain = function(message, message_id) {
+        var proto = textsecure.protobuf.IncomingPushMessageSignal.decode(message);
         // Wipe identity key!
-        textsecure.storage.devices.removeIdentityKeyForNumber(from.split('.')[0]);
-        //TODO: Probably breaks with a devicecontrol message
-        return axolotl.protocol.handlePreKeyWhisperMessage(from, encodedMessage).then(decodeMessageContents).then(
+        textsecure.storage.devices.removeIdentityKeyForNumber(proto.source);
+        return textsecure.protocol_wrapper.handleIncomingPushMessageProto(proto).then(
             function(pushMessageContent) {
                 extension.trigger('message:decrypted', {
                     message_id : message_id,
