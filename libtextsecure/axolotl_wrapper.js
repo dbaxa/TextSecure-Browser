@@ -123,11 +123,9 @@
         }
     };
 
-    var wipeIdentityAndTryMessageAgain = function(message) {
+    var tryMessageAgain = function(message) {
         var proto = textsecure.protobuf.IncomingPushMessageSignal.decode(message);
-        // Wipe identity key!
-        textsecure.storage.devices.removeIdentityKeyForNumber(proto.source);
         return textsecure.protocol_wrapper.handleIncomingPushMessageProto(proto);
     }
-    textsecure.replay.registerFunction(wipeIdentityAndTryMessageAgain, textsecure.replay.Type.INIT_SESSION);
+    textsecure.replay.registerFunction(tryMessageAgain, textsecure.replay.Type.INIT_SESSION);
 })();
